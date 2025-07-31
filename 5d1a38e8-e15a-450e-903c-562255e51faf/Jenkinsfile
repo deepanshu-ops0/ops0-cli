@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    
+    environment {
+        GO_VERSION = '1.21'
+        GOPATH = "${WORKSPACE}/gopath"
+        PATH = "${GOPATH}/bin:${PATH}"
+    }
+    
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git url: 'https://github.com/deepanshu-ops0/ops0-cli', branch: 'main'
+            }
+        }
+        
+        stage('Setup Go Environment') {
+            steps {
+                sh 'go version'
+                sh 'mkdir -p ${GOPATH}/src ${GOPATH}/bin'
+                sh 'go env'
+            }
+        }
+        
+        stage('Download Dependencies') {
+            steps {
+                sh 'go mod download'
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                sh 'go test ./...'
+            }
+        }
+        
+        stage('Build Binary') {
+            steps {
+                sh 'go build -o bin/ops0-cli'
+            }
+        }
+        
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'bin/ops0-cli', fingerprint: true
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed!'
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
